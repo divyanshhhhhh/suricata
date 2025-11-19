@@ -1,0 +1,54 @@
+# Systemd service file for Suricata Rule Builder Dashboard
+#
+# Installation:
+# 1. Edit the paths below to match your installation
+# 2. Copy this file to /etc/systemd/system/
+#    sudo cp suricata-builder.service /etc/systemd/system/
+# 3. Reload systemd
+#    sudo systemctl daemon-reload
+# 4. Enable the service
+#    sudo systemctl enable suricata-builder
+# 5. Start the service
+#    sudo systemctl start suricata-builder
+# 6. Check status
+#    sudo systemctl status suricata-builder
+
+[Unit]
+Description=Suricata Rule Builder Dashboard
+Documentation=https://github.com/your-repo/suricata-rule-builder
+After=network.target suricata.service
+Wants=suricata.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/suricata-rule-builder
+Environment="PATH=/opt/suricata-rule-builder/venv/bin"
+Environment="FLASK_APP=app.py"
+
+# Production command with Gunicorn
+ExecStart=/opt/suricata-rule-builder/venv/bin/gunicorn \
+    --workers 4 \
+    --bind 0.0.0.0:5500 \
+    --access-logfile /var/log/suricata-builder/access.log \
+    --error-logfile /var/log/suricata-builder/error.log \
+    --log-level info \
+    app:app
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/suricata-rule-builder/custom.rules /etc/suricata/rules
+
+# Resource limits
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

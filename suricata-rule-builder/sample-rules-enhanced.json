@@ -1,0 +1,112 @@
+{
+  "rules": [
+    {
+      "raw": "alert http any any -> any any (msg:\"HTTP - SQL Injection in URI\"; http.uri; content:\"/api/users\"; http.uri; content:\"union select\"; nocase; classtype:web-application-attack; priority:1; sid:2000001; rev:1;)",
+      "description": "Detects SQL injection attempts in HTTP URI"
+    },
+    {
+      "raw": "alert http any any -> any any (msg:\"HTTP - Suspicious User-Agent (curl)\"; http.user_agent; content:\"curl/\"; nocase; classtype:web-application-activity; priority:2; sid:2000002; rev:1;)",
+      "description": "Detects curl user agent in HTTP requests"
+    },
+    {
+      "raw": "alert http any any -> any any (msg:\"HTTP - Admin Panel Access Attempt\"; http.uri; content:\"/admin\"; startswith; flow:to_server,established; classtype:web-application-activity; priority:2; sid:2000003; rev:1;)",
+      "description": "Detects access attempts to admin panel"
+    },
+    {
+      "raw": "alert http any any -> any any (msg:\"HTTP - POST to Login with Cookie\"; http.method; content:\"POST\"; http.uri; content:\"/login\"; http.cookie; content:\"session=\"; classtype:web-application-activity; priority:3; sid:2000004; rev:1;)",
+      "description": "Detects POST requests to login page with session cookie"
+    },
+    {
+      "raw": "alert http any any -> any any (msg:\"HTTP - Suspicious Referer Domain\"; http.referer; content:\"malicious-site.com\"; nocase; classtype:trojan-activity; priority:1; sid:2000005; rev:1;)",
+      "description": "Detects suspicious referer header"
+    },
+    {
+      "raw": "alert http any any -> any any (msg:\"HTTP - JSON Content Type with SQL Keywords\"; http.content_type; content:\"application/json\"; http.request_body; content:\"SELECT\"; nocase; classtype:web-application-attack; priority:1; sid:2000006; rev:1;)",
+      "description": "Detects SQL keywords in JSON POST data"
+    },
+    {
+      "raw": "alert http any any -> any any (msg:\"HTTP - 500 Internal Server Error Response\"; http.stat_code; content:\"500\"; threshold:type threshold, track by_src, count 5, seconds 60; classtype:web-application-attack; priority:2; sid:2000007; rev:1;)",
+      "description": "Detects multiple 500 errors from same source"
+    },
+    {
+      "raw": "alert http any any -> any any (msg:\"HTTP - Malware Download - EXE File\"; http.uri; content:\".exe\"; file.data; content:\"MZ\"; offset:0; depth:2; classtype:trojan-activity; priority:1; sid:2000008; rev:1;)",
+      "description": "Detects .exe file downloads with PE header"
+    },
+    {
+      "raw": "alert tls any any -> any any (msg:\"TLS - Outdated SSL/TLS Version\"; tls.version:\"1.0\"; flow:to_server,established; classtype:policy-violation; priority:2; sid:2000009; rev:1;)",
+      "description": "Detects use of TLS 1.0 (deprecated)"
+    },
+    {
+      "raw": "alert tls any any -> any any (msg:\"TLS - Self-Signed Certificate Detected\"; tls.subject; content:\"CN=localhost\"; nocase; classtype:suspicious-login; priority:2; sid:2000010; rev:1;)",
+      "description": "Detects self-signed certificates"
+    },
+    {
+      "raw": "alert tls any any -> any any (msg:\"TLS - SNI Mismatch with Known Malware Domain\"; tls.sni; content:\"malware-c2.com\"; nocase; classtype:trojan-activity; priority:1; sid:2000011; rev:1;)",
+      "description": "Detects TLS SNI matching known malware domain"
+    },
+    {
+      "raw": "alert tls any any -> any any (msg:\"TLS - Suspicious Certificate Issuer\"; tls.issuer; content:\"CN=FreeSSL\"; nocase; classtype:suspicious-login; priority:3; sid:2000012; rev:1;)",
+      "description": "Detects certificates from suspicious issuers"
+    },
+    {
+      "raw": "alert tls any any -> any any (msg:\"TLS - Known Malicious JA3 Fingerprint\"; ja3.hash; content:\"6734f37431670b3ab4292b8f60f29984\"; classtype:trojan-activity; priority:1; sid:2000013; rev:1;)",
+      "description": "Detects known malicious JA3 client fingerprint"
+    },
+    {
+      "raw": "alert tls any any -> any any (msg:\"TLS - Suspicious JA3S Server Fingerprint\"; ja3s.hash; content:\"f4febc55ea12b31ae17cfb7e614afda8\"; classtype:trojan-activity; priority:1; sid:2000014; rev:1;)",
+      "description": "Detects suspicious JA3S server fingerprint"
+    },
+    {
+      "raw": "alert tls $EXTERNAL_NET any -> $HOME_NET any (msg:\"TLS - Certificate for Internal Hostname from External Source\"; tls.subject; content:\"CN=internal\"; nocase; classtype:policy-violation; priority:1; sid:2000015; rev:1;)",
+      "description": "Detects external TLS with internal hostname"
+    },
+    {
+      "raw": "alert dns any any -> any any (msg:\"DNS - Query for Known DGA Domain\"; dns.query; content:\".tk\"; nocase; endswith; classtype:trojan-activity; priority:1; sid:2000016; rev:1;)",
+      "description": "Detects DNS queries for .tk domains (common in DGA)"
+    },
+    {
+      "raw": "alert dns any any -> any any (msg:\"DNS - Excessive TXT Record Query\"; dns.query.type:TXT; threshold:type threshold, track by_src, count 10, seconds 60; classtype:policy-violation; priority:2; sid:2000017; rev:1;)",
+      "description": "Detects excessive TXT record queries (possible DNS tunneling)"
+    },
+    {
+      "raw": "alert dns any any -> any any (msg:\"DNS - Query for Suspicious Long Domain Name\"; dns.query; content:\"|00|\"; depth:100; isdataat:60,relative; classtype:trojan-activity; priority:2; sid:2000018; rev:1;)",
+      "description": "Detects unusually long DNS queries"
+    },
+    {
+      "raw": "alert dns any any -> any any (msg:\"DNS - ANY Query Type (Possible Amplification)\"; dns.query.type:ANY; flow:to_server; classtype:attempted-dos; priority:1; sid:2000019; rev:1;)",
+      "description": "Detects DNS ANY queries (used in amplification attacks)"
+    },
+    {
+      "raw": "alert dns any any -> any any (msg:\"DNS - Query for Known C2 Domain\"; dns.query; content:\"malware-c2.com\"; nocase; classtype:trojan-activity; priority:1; sid:2000020; rev:1;)",
+      "description": "Detects DNS query for known C2 domain"
+    },
+    {
+      "raw": "alert dns any any -> any any (msg:\"DNS - Response with Private IP in Answer\"; dns.answer; content:\"192.168.\"; classtype:policy-violation; priority:3; sid:2000021; rev:1;)",
+      "description": "Detects DNS responses containing private IPs"
+    },
+    {
+      "raw": "alert dns any any -> any any (msg:\"DNS - Update Operation Detected\"; dns.opcode:5; classtype:policy-violation; priority:2; sid:2000022; rev:1;)",
+      "description": "Detects DNS update operations"
+    },
+    {
+      "raw": "alert dns $HOME_NET any -> $EXTERNAL_NET 53 (msg:\"DNS - Outbound Query for Cryptocurrency Mining Pool\"; dns.query; content:\"pool.minexmr.com\"; nocase; classtype:policy-violation; priority:1; sid:2000023; rev:1;)",
+      "description": "Detects DNS queries for cryptocurrency mining pools"
+    },
+    {
+      "raw": "alert dns any any -> any any (msg:\"DNS - MX Record Query to Suspicious Domain\"; dns.query.type:MX; dns.query; content:\".xyz\"; nocase; endswith; classtype:suspicious-login; priority:2; sid:2000024; rev:1;)",
+      "description": "Detects MX queries for suspicious TLDs"
+    },
+    {
+      "raw": "alert dns any any -> any any (msg:\"DNS - Base64-like Pattern in Query (Possible Exfiltration)\"; dns.query; pcre:\"/[A-Za-z0-9+\\/]{30,}/\"; classtype:policy-violation; priority:1; sid:2000025; rev:1;)",
+      "description": "Detects base64-like patterns in DNS queries (data exfiltration)"
+    }
+  ],
+  "description": "Enhanced Suricata rules demonstrating HTTP, TLS, and DNS keyword capabilities",
+  "created": "2025-01-19",
+  "version": "2.0",
+  "categories": {
+    "http": [2000001, 2000002, 2000003, 2000004, 2000005, 2000006, 2000007, 2000008],
+    "tls": [2000009, 2000010, 2000011, 2000012, 2000013, 2000014, 2000015],
+    "dns": [2000016, 2000017, 2000018, 2000019, 2000020, 2000021, 2000022, 2000023, 2000024, 2000025]
+  }
+}

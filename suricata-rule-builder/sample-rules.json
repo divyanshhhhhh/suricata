@@ -1,0 +1,52 @@
+{
+  "rules": [
+    {
+      "raw": "alert http any any -> any any (msg:\"Possible SQL Injection Attack\"; content:\"union select\"; nocase; classtype:web-application-attack; priority:1; sid:1000001; rev:1;)"
+    },
+    {
+      "raw": "alert http any any -> any any (msg:\"XSS Attack Detected\"; content:\"<script>\"; nocase; http_uri; classtype:web-application-attack; priority:1; sid:1000002; rev:1;)"
+    },
+    {
+      "raw": "alert http $EXTERNAL_NET any -> $HOME_NET any (msg:\"Malware Download - Suspicious .exe\"; content:\".exe\"; http_uri; flow:established,to_client; classtype:trojan-activity; priority:1; sid:1000003; rev:1;)"
+    },
+    {
+      "raw": "drop tcp $EXTERNAL_NET any -> $HOME_NET 22 (msg:\"SSH Brute Force Attempt\"; flow:to_server,established; threshold:type threshold, track by_src, count 10, seconds 60; classtype:attempted-admin; priority:1; sid:1000004; rev:1;)"
+    },
+    {
+      "raw": "alert tcp any any -> any 3389 (msg:\"RDP Connection Attempt\"; flow:to_server,established; threshold:type limit, track by_src, count 1, seconds 300; classtype:attempted-admin; priority:2; sid:1000005; rev:1;)"
+    },
+    {
+      "raw": "alert dns any any -> any any (msg:\"DNS Query for Known Malware Domain\"; dns.query; content:\"malware-c2.example.com\"; nocase; classtype:trojan-activity; priority:1; sid:1000006; rev:1;)"
+    },
+    {
+      "raw": "alert tls any any -> any any (msg:\"Suspicious TLS Certificate - Self Signed\"; tls.cert_subject; content:\"CN=localhost\"; classtype:suspicious-login; priority:2; sid:1000007; rev:1;)"
+    },
+    {
+      "raw": "alert http any any -> any any (msg:\"File Upload Attempt\"; content:\"Content-Type: multipart/form-data\"; http_header; content:\"filename=\"; distance:0; classtype:web-application-activity; priority:3; sid:1000008; rev:1;)"
+    },
+    {
+      "raw": "alert smtp any any -> any 25 (msg:\"Email with Suspicious Attachment\"; content:\"Content-Type: application/\"; content:\".exe\"; distance:0; within:100; classtype:suspicious-filename-detect; priority:2; sid:1000009; rev:1;)"
+    },
+    {
+      "raw": "alert tcp any any -> any [1:1024] (msg:\"Port Scan Detected\"; flags:S; threshold:type both, track by_src, count 20, seconds 60; classtype:attempted-recon; priority:2; sid:1000010; rev:1;)"
+    },
+    {
+      "raw": "alert icmp any any -> $HOME_NET any (msg:\"ICMP Ping Sweep\"; itype:8; threshold:type threshold, track by_src, count 10, seconds 5; classtype:attempted-recon; priority:3; sid:1000011; rev:1;)"
+    },
+    {
+      "raw": "alert http any any -> any any (msg:\"Directory Traversal Attempt\"; content:\"../\"; http_uri; nocase; classtype:web-application-attack; priority:1; sid:1000012; rev:1;)"
+    },
+    {
+      "raw": "alert http any any -> any any (msg:\"Command Injection Attempt\"; content:\"; \"; http_uri; content:\"wget \"; distance:0; nocase; classtype:web-application-attack; priority:1; sid:1000013; rev:1;)"
+    },
+    {
+      "raw": "alert tcp $EXTERNAL_NET any -> $HOME_NET 445 (msg:\"SMB Connection from External Network\"; flow:to_server,established; classtype:policy-violation; priority:2; sid:1000014; rev:1;)"
+    },
+    {
+      "raw": "alert http any any -> any any (msg:\"Cryptocurrency Mining Script Detected\"; content:\"coinhive\"; nocase; http_uri; classtype:trojan-activity; priority:1; sid:1000015; rev:1;)"
+    }
+  ],
+  "description": "Sample Suricata rules for demonstration and testing",
+  "created": "2025-01-01",
+  "version": "1.0"
+}

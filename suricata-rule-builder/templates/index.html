@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suricata Rule Builder Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛡️ Suricata Rule Builder Dashboard</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="showHelp()">📖 Help</button>
+                <button class="btn btn-secondary" onclick="exportRules()">⬇️ Export Rules</button>
+                <button class="btn btn-secondary" onclick="showImportDialog()">⬆️ Import Rules</button>
+                <button class="btn btn-warning" onclick="reloadService()">🔄 Reload Suricata</button>
+            </div>
+        </header>
+
+        <!-- Rule Preview Section -->
+        <section class="rule-preview-section">
+            <h2>Rule Preview</h2>
+            <div class="rule-preview" id="rulePreview">
+                <code>alert tcp any any -> any any (msg:"Example Rule"; sid:1000000; rev:1;)</code>
+            </div>
+            <div class="preview-actions">
+                <button class="btn btn-sm btn-secondary" onclick="copyToClipboard()">📋 Copy</button>
+            </div>
+        </section>
+
+        <!-- Editable Rule Text Area -->
+        <section class="manual-edit-section">
+            <h2>Manual Rule Editor</h2>
+            <textarea id="manualRuleEdit" rows="4" placeholder="Edit rule manually here...">alert tcp any any -> any any (msg:"Example Rule"; sid:1000000; rev:1;)</textarea>
+            <div class="manual-edit-actions">
+                <button class="btn btn-primary" onclick="parseManualRule()">⬆️ Load to Form</button>
+                <button class="btn btn-success" onclick="validateCurrentRule()">✓ Check Syntax</button>
+            </div>
+            <div id="validationResult" class="validation-result"></div>
+        </section>
+
+        <!-- Rule Builder Form -->
+        <section class="rule-builder-section">
+            <h2>Rule Builder Form</h2>
+
+            <form id="ruleForm">
+                <!-- Basic Rule Components -->
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="action" title="Action to take when rule matches">
+                            Action *
+                            <span class="tooltip">ⓘ</span>
+                        </label>
+                        <select id="action" name="action" required>
+                            <option value="alert" selected>alert - Generate alert</option>
+                            <option value="pass">pass - Stop inspection</option>
+                            <option value="drop">drop - Drop packet</option>
+                            <option value="reject">reject - Send RST/ICMP error</option>
+                            <option value="rejectsrc">rejectsrc - Reject source</option>
+                            <option value="rejectdst">rejectdst - Reject destination</option>
+                            <option value="rejectboth">rejectboth - Reject both</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="protocol" title="Network protocol">
+                            Protocol *
+                            <span class="tooltip">ⓘ</span>
+                        </label>
+                        <select id="protocol" name="protocol" required>
+                            <option value="tcp" selected>tcp</option>
+                            <option value="udp">udp</option>
+                            <option value="icmp">icmp</option>
+                            <option value="ip">ip</option>
+                            <option value="http">http</option>
+                            <option value="dns">dns</option>
+                            <option value="tls">tls</option>
+                            <option value="ssh">ssh</option>
+                            <option value="ftp">ftp</option>
+                            <option value="smtp">smtp</option>
+                            <option value="smb">smb</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="srcIp" title="Source IP address or network">
+                            Source IP *
+                            <span class="tooltip">ⓘ</span>
+                        </label>
+                        <input type="text" id="srcIp" name="src_ip" value="any" placeholder="any, 192.168.1.0/24, $HOME_NET" required>
+                        <small>Examples: any, 192.168.1.1, 192.168.1.0/24, $HOME_NET, [10.0.0.0/8,172.16.0.0/12]</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="srcPort" title="Source port or port range">
+                            Source Port *
+                            <span class="tooltip">ⓘ</span>
+                        </label>
+                        <input type="text" id="srcPort" name="src_port" value="any" placeholder="any, 80, 1:1024, [80,443]" required>
+                        <small>Examples: any, 80, 1:1024, [80,443,8080]</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="direction" title="Traffic direction">
+                            Direction *
+                            <span class="tooltip">ⓘ</span>
+                        </label>
+                        <div class="radio-group">
+                            <label>
+                                <input type="radio" name="direction" value="->" checked> → Unidirectional
+                            </label>
+                            <label>
+                                <input type="radio" name="direction" value="<>"> ↔ Bidirectional
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dstIp" title="Destination IP address or network">
+                            Destination IP *
+                            <span class="tooltip">ⓘ</span>
+                        </label>
+                        <input type="text" id="dstIp" name="dst_ip" value="any" placeholder="any, 192.168.1.0/24, $EXTERNAL_NET" required>
+                        <small>Examples: any, 192.168.1.1, $EXTERNAL_NET</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dstPort" title="Destination port or port range">
+                            Destination Port *
+                            <span class="tooltip">ⓘ</span>
+                        </label>
+                        <input type="text" id="dstPort" name="dst_port" value="any" placeholder="any, 80, 1:1024, [80,443]" required>
+                        <small>Examples: any, 80, 1:1024, !80</small>
+                    </div>
+                </div>
+
+                <!-- Rule Options -->
+                <div class="form-section">
+                    <h3>Rule Options</h3>
+
+                    <div class="form-group">
+                        <label for="msg" title="Rule description message">
+                            Message *
+                            <span class="tooltip">ⓘ</span>
+                        </label>
+                        <input type="text" id="msg" name="msg" placeholder="Descriptive message for this rule" required>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="sid" title="Signature ID (unique identifier)">
+                                SID (Signature ID) *
+                                <span class="tooltip">ⓘ</span>
+                            </label>
+                            <input type="number" id="sid" name="sid" value="1000000" min="1000000" required>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="getNextSid()">Get Next</button>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="rev" title="Rule revision number">
+                                Revision
+                                <span class="tooltip">ⓘ</span>
+                            </label>
+                            <input type="number" id="rev" name="rev" value="1" min="1" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="classtype" title="Rule classification type">
+                                Class Type
+                                <span class="tooltip">ⓘ</span>
+                            </label>
+                            <select id="classtype" name="classtype">
+                                <option value="">-- Select Classification --</option>
+                                <option value="attempted-admin">attempted-admin</option>
+                                <option value="attempted-user">attempted-user</option>
+                                <option value="inappropriate-content">inappropriate-content</option>
+                                <option value="policy-violation">policy-violation</option>
+                                <option value="shellcode-detect">shellcode-detect</option>
+                                <option value="successful-admin">successful-admin</option>
+                                <option value="successful-user">successful-user</option>
+                                <option value="trojan-activity">trojan-activity</option>
+                                <option value="unsuccessful-user">unsuccessful-user</option>
+                                <option value="web-application-attack">web-application-attack</option>
+                                <option value="attempted-dos">attempted-dos</option>
+                                <option value="attempted-recon">attempted-recon</option>
+                                <option value="bad-unknown">bad-unknown</option>
+                                <option value="default-login-attempt">default-login-attempt</option>
+                                <option value="denial-of-service">denial-of-service</option>
+                                <option value="misc-attack">misc-attack</option>
+                                <option value="non-standard-protocol">non-standard-protocol</option>
+                                <option value="rpc-portmap-decode">rpc-portmap-decode</option>
+                                <option value="successful-dos">successful-dos</option>
+                                <option value="successful-recon-largescale">successful-recon-largescale</option>
+                                <option value="successful-recon-limited">successful-recon-limited</option>
+                                <option value="suspicious-filename-detect">suspicious-filename-detect</option>
+                                <option value="suspicious-login">suspicious-login</option>
+                                <option value="system-call-detect">system-call-detect</option>
+                                <option value="unusual-client-port-connection">unusual-client-port-connection</option>
+                                <option value="web-application-activity">web-application-activity</option>
+                                <option value="icmp-event">icmp-event</option>
+                                <option value="misc-activity">misc-activity</option>
+                                <option value="network-scan">network-scan</option>
+                                <option value="not-suspicious">not-suspicious</option>
+                                <option value="protocol-command-decode">protocol-command-decode</option>
+                                <option value="string-detect">string-detect</option>
+                                <option value="unknown">unknown</option>
+                                <option value="tcp-connection">tcp-connection</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="priority" title="Rule priority (1=high, 4=low)">
+                                Priority
+                                <span class="tooltip">ⓘ</span>
+                            </label>
+                            <select id="priority" name="priority">
+                                <option value="">-- Select Priority --</option>
+                                <option value="1">1 - High</option>
+                                <option value="2">2 - Medium-High</option>
+                                <option value="3">3 - Medium-Low</option>
+                                <option value="4">4 - Low</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reference" title="External reference (e.g., CVE, URL)">
+                            Reference
+                            <span class="tooltip">ⓘ</span>
+                        </label>
+                        <input type="text" id="reference" name="reference" placeholder="url,example.com/advisory or cve,2021-12345">
+                        <small>Examples: url,www.example.com | cve,2021-12345 | bugtraq,12345</small>
+                    </div>
+                </div>
+
+                <!-- Content Matching -->
+                <div class="form-section">
+                    <h3>Content Matching</h3>
+                    <div id="contentFields">
+                        <!-- Content fields will be added dynamically -->
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="addContentField()">+ Add Content Match</button>
+                </div>
+
+                <!-- HTTP Keywords (Protocol-Specific) -->
+                <div class="form-section protocol-specific" id="httpKeywordsSection" style="display:none;">
+                    <h3 class="collapsible-header" onclick="toggleSection('httpKeywords')">
+                        <span class="toggle-icon">▶</span> HTTP Keywords
+                        <small>(Only for HTTP protocol)</small>
+                    </h3>
+                    <div id="httpKeywords" class="collapsible-content" style="display:none;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="httpMethod">HTTP Method</label>
+                                <input type="text" id="httpMethod" name="http_method" placeholder="GET, POST, PUT, DELETE">
+                                <small>Match specific HTTP method</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="httpUri">HTTP URI</label>
+                                <input type="text" id="httpUri" name="http_uri" placeholder="/api/users">
+                                <small>Match URI path</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="httpUserAgent">User-Agent</label>
+                                <input type="text" id="httpUserAgent" name="http_user_agent" placeholder="Mozilla/5.0">
+                                <small>Match User-Agent header</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="httpHost">Host Header</label>
+                                <input type="text" id="httpHost" name="http_host" placeholder="example.com">
+                                <small>Match Host header</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="httpCookie">Cookie</label>
+                                <input type="text" id="httpCookie" name="http_cookie" placeholder="sessionid=">
+                                <small>Match cookie content</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="httpReferer">Referer</label>
+                                <input type="text" id="httpReferer" name="http_referer" placeholder="http://example.com">
+                                <small>Match Referer header</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="httpContentType">Content-Type</label>
+                                <input type="text" id="httpContentType" name="http_content_type" placeholder="application/json">
+                                <small>Match Content-Type header</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="httpStatCode">Status Code</label>
+                                <input type="text" id="httpStatCode" name="http_stat_code" placeholder="200, 404, 500">
+                                <small>Match HTTP response status code</small>
+                            </div>
+                        </div>
+
+                        <div class="checkbox-grid">
+                            <label>
+                                <input type="checkbox" name="http_request_body" id="httpRequestBody">
+                                Match in Request Body (POST data)
+                            </label>
+                            <label>
+                                <input type="checkbox" name="http_response_body" id="httpResponseBody">
+                                Match in Response Body
+                            </label>
+                            <label>
+                                <input type="checkbox" name="file_data" id="fileData">
+                                Match in File Data
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TLS/SSL Keywords (Protocol-Specific) -->
+                <div class="form-section protocol-specific" id="tlsKeywordsSection" style="display:none;">
+                    <h3 class="collapsible-header" onclick="toggleSection('tlsKeywords')">
+                        <span class="toggle-icon">▶</span> TLS/SSL Keywords
+                        <small>(Only for TLS protocol)</small>
+                    </h3>
+                    <div id="tlsKeywords" class="collapsible-content" style="display:none;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="tlsVersion">TLS Version</label>
+                                <select id="tlsVersion" name="tls_version">
+                                    <option value="">-- Any Version --</option>
+                                    <option value="1.0">TLS 1.0</option>
+                                    <option value="1.1">TLS 1.1</option>
+                                    <option value="1.2">TLS 1.2</option>
+                                    <option value="1.3">TLS 1.3</option>
+                                    <option value="SSLv3">SSL v3</option>
+                                </select>
+                                <small>Match specific TLS version</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tlsSni">Server Name Indication (SNI)</label>
+                                <input type="text" id="tlsSni" name="tls_sni" placeholder="example.com">
+                                <small>Match SNI hostname</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tlsSubject">Certificate Subject</label>
+                                <input type="text" id="tlsSubject" name="tls_subject" placeholder="CN=example.com">
+                                <small>Match certificate subject</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tlsIssuer">Certificate Issuer</label>
+                                <input type="text" id="tlsIssuer" name="tls_issuer" placeholder="CN=Let's Encrypt">
+                                <small>Match certificate issuer</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tlsCertFingerprint">Certificate Fingerprint</label>
+                                <input type="text" id="tlsCertFingerprint" name="tls_cert_fingerprint" placeholder="aa:bb:cc:dd:...">
+                                <small>Match certificate fingerprint</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ja3Hash">JA3 Hash (Client)</label>
+                                <input type="text" id="ja3Hash" name="ja3_hash" placeholder="6734f37431670b3ab4292b8f60f29984">
+                                <small>Match JA3 client fingerprint</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ja3sHash">JA3S Hash (Server)</label>
+                                <input type="text" id="ja3sHash" name="ja3s_hash" placeholder="f4febc55ea12b31ae17cfb7e614afda8">
+                                <small>Match JA3S server fingerprint</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DNS Keywords (Protocol-Specific) -->
+                <div class="form-section protocol-specific" id="dnsKeywordsSection" style="display:none;">
+                    <h3 class="collapsible-header" onclick="toggleSection('dnsKeywords')">
+                        <span class="toggle-icon">▶</span> DNS Keywords
+                        <small>(Only for DNS protocol)</small>
+                    </h3>
+                    <div id="dnsKeywords" class="collapsible-content" style="display:none;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="dnsQuery">DNS Query Name</label>
+                                <input type="text" id="dnsQuery" name="dns_query" placeholder="example.com">
+                                <small>Match DNS query domain</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="dnsQueryType">DNS Query Type</label>
+                                <select id="dnsQueryType" name="dns_query_type">
+                                    <option value="">-- Any Type --</option>
+                                    <option value="A">A - IPv4 Address</option>
+                                    <option value="AAAA">AAAA - IPv6 Address</option>
+                                    <option value="MX">MX - Mail Exchange</option>
+                                    <option value="TXT">TXT - Text Record</option>
+                                    <option value="CNAME">CNAME - Canonical Name</option>
+                                    <option value="NS">NS - Name Server</option>
+                                    <option value="PTR">PTR - Pointer</option>
+                                    <option value="SOA">SOA - Start of Authority</option>
+                                    <option value="SRV">SRV - Service</option>
+                                    <option value="ANY">ANY - All Records</option>
+                                </select>
+                                <small>Match specific query type</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="dnsAnswer">DNS Answer</label>
+                                <input type="text" id="dnsAnswer" name="dns_answer" placeholder="192.168.1.1">
+                                <small>Match DNS answer content</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="dnsOpcode">DNS Opcode</label>
+                                <select id="dnsOpcode" name="dns_opcode">
+                                    <option value="">-- Any Opcode --</option>
+                                    <option value="0">0 - Query</option>
+                                    <option value="1">1 - IQuery</option>
+                                    <option value="2">2 - Status</option>
+                                    <option value="4">4 - Notify</option>
+                                    <option value="5">5 - Update</option>
+                                </select>
+                                <small>Match DNS operation code</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flow Options -->
+                <div class="form-section">
+                    <h3>Flow Options</h3>
+                    <div class="checkbox-grid">
+                        <label>
+                            <input type="checkbox" name="flow_established" id="flowEstablished">
+                            Established Connection
+                        </label>
+                        <label>
+                            <input type="checkbox" name="flow_to_server" id="flowToServer">
+                            To Server
+                        </label>
+                        <label>
+                            <input type="checkbox" name="flow_to_client" id="flowToClient">
+                            To Client
+                        </label>
+                        <label>
+                            <input type="checkbox" name="flow_from_server" id="flowFromServer">
+                            From Server
+                        </label>
+                        <label>
+                            <input type="checkbox" name="flow_from_client" id="flowFromClient">
+                            From Client
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Threshold Options -->
+                <div class="form-section">
+                    <h3>Threshold Options (Optional)</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="thresholdType">Threshold Type</label>
+                            <select id="thresholdType" name="threshold_type">
+                                <option value="">-- No Threshold --</option>
+                                <option value="limit">limit - Alert once per time period</option>
+                                <option value="threshold">threshold - Alert after N events</option>
+                                <option value="both">both - Both limit and threshold</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="thresholdTrack">Track By</label>
+                            <select id="thresholdTrack" name="threshold_track">
+                                <option value="by_src">by_src - By source IP</option>
+                                <option value="by_dst">by_dst - By destination IP</option>
+                                <option value="by_both">by_both - By both IPs</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="thresholdCount">Count</label>
+                            <input type="number" id="thresholdCount" name="threshold_count" min="1" placeholder="Number of events">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="thresholdSeconds">Seconds</label>
+                            <input type="number" id="thresholdSeconds" name="threshold_seconds" min="1" placeholder="Time period">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="button" class="btn btn-success" onclick="saveRule()">💾 Save Rule</button>
+                    <button type="button" class="btn btn-primary" onclick="validateCurrentRule()">✓ Check Syntax</button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">🔄 Reset Form</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Existing Rules Table -->
+        <section class="existing-rules-section">
+            <h2>Existing Rules</h2>
+            <div class="rules-table-container">
+                <table id="rulesTable">
+                    <thead>
+                        <tr>
+                            <th>SID</th>
+                            <th>Message</th>
+                            <th>Action</th>
+                            <th>Protocol</th>
+                            <th>Rule</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rulesTableBody">
+                        <tr>
+                            <td colspan="6" class="text-center">Loading rules...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeHelp()">&times;</span>
+            <h2>Suricata Rule Syntax Help</h2>
+
+            <h3>Rule Structure</h3>
+            <pre>action protocol src_ip src_port direction dst_ip dst_port (options)</pre>
+
+            <h3>Actions</h3>
+            <ul>
+                <li><strong>alert</strong> - Generate an alert when rule matches</li>
+                <li><strong>pass</strong> - Stop further inspection of the packet</li>
+                <li><strong>drop</strong> - Drop the packet and generate alert</li>
+                <li><strong>reject</strong> - Send TCP RST or ICMP unreachable</li>
+            </ul>
+
+            <h3>IP Address Formats</h3>
+            <ul>
+                <li><strong>any</strong> - Any IP address</li>
+                <li><strong>192.168.1.1</strong> - Single IP</li>
+                <li><strong>192.168.1.0/24</strong> - CIDR notation (network)</li>
+                <li><strong>$HOME_NET</strong> - Variable (defined in suricata.yaml)</li>
+                <li><strong>[10.0.0.0/8,172.16.0.0/12]</strong> - Multiple addresses</li>
+                <li><strong>!192.168.1.1</strong> - Negation (not this IP)</li>
+            </ul>
+
+            <h3>Port Formats</h3>
+            <ul>
+                <li><strong>any</strong> - Any port</li>
+                <li><strong>80</strong> - Single port</li>
+                <li><strong>1:1024</strong> - Port range</li>
+                <li><strong>[80,443,8080]</strong> - Multiple ports</li>
+                <li><strong>!80</strong> - Negation (not this port)</li>
+            </ul>
+
+            <h3>Common Options</h3>
+            <ul>
+                <li><strong>msg</strong> - Rule description (required)</li>
+                <li><strong>sid</strong> - Unique signature ID (required, use 1000000+ for custom rules)</li>
+                <li><strong>rev</strong> - Revision number</li>
+                <li><strong>content</strong> - Match packet payload content</li>
+                <li><strong>flow</strong> - Traffic flow options</li>
+                <li><strong>classtype</strong> - Rule classification</li>
+                <li><strong>priority</strong> - Rule priority (1=high, 4=low)</li>
+            </ul>
+
+            <h3>Example Rules</h3>
+            <pre>alert tcp any any -> $HOME_NET 80 (msg:"Possible SQL Injection"; content:"union select"; nocase; sid:1000001; rev:1;)
+
+alert http any any -> any any (msg:"Malware download detected"; content:".exe"; http_uri; classtype:trojan-activity; sid:1000002; rev:1;)
+
+drop tcp $EXTERNAL_NET any -> $HOME_NET 22 (msg:"SSH brute force attempt"; flow:to_server,established; threshold:type threshold, track by_src, count 10, seconds 60; sid:1000003; rev:1;)</pre>
+
+            <h3>Tips</h3>
+            <ul>
+                <li>Use SIDs >= 1000000 for custom rules to avoid conflicts</li>
+                <li>Test rules with "Check Syntax" before saving</li>
+                <li>Use meaningful messages to describe what the rule detects</li>
+                <li>Set appropriate priority and classtype for better alert management</li>
+                <li>Use flow options to reduce false positives</li>
+            </ul>
+
+            <button class="btn btn-primary" onclick="closeHelp()">Close</button>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeImportDialog()">&times;</span>
+            <h2>Import Rules</h2>
+            <p>Paste JSON rules data or upload a JSON file:</p>
+            <textarea id="importData" rows="10" placeholder='{"rules": [{"raw": "alert tcp any any -> any any (msg:\"Test\"; sid:1000001; rev:1;)"}]}'></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="importRules()">Import</button>
+                <button class="btn btn-secondary" onclick="closeImportDialog()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
