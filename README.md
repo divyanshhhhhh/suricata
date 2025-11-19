@@ -1,4 +1,4 @@
-# 🛡️ Suricata Rule Builder Dashboard
+# Suricata Rule Builder Dashboard
 
 A comprehensive web-based interface for creating, editing, and managing Suricata IDS/IPS rules with advanced protocol-specific detection capabilities.
 
