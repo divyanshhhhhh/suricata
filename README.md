@@ -4,7 +4,7 @@ A comprehensive web-based interface for creating, editing, and managing Suricata
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ```bash
 cd suricata-rule-builder
@@ -16,7 +16,7 @@ That's it! The dashboard will be running and ready to use.
 
 ---
 
-## ✨ Features
+##  Features
 
 ### Core Functionality
 - ✅ **Real-time Rule Preview** - See your rule as you build it
@@ -65,7 +65,7 @@ That's it! The dashboard will be running and ready to use.
 
 ---
 
-## 📋 Requirements
+## Requirements
 
 - Python 3.8 or higher
 - Modern web browser (Chrome, Firefox, Safari, Edge)
@@ -73,7 +73,7 @@ That's it! The dashboard will be running and ready to use.
 
 ---
 
-## 📦 Installation
+##  Installation
 
 ### Method 1: Quick Start (Recommended)
 ```bash
@@ -118,7 +118,7 @@ sudo systemctl start suricata-builder
 
 ---
 
-## 🎯 Usage Guide
+##  Usage Guide
 
 ### Creating Your First Rule
 
@@ -257,7 +257,7 @@ alert http any any -> any any (
 
 ---
 
-## 🔧 Configuration
+##  Configuration
 
 ### Rules File Location
 Default: `/etc/suricata/rules/custom.rules`
@@ -294,7 +294,7 @@ username ALL=(ALL) NOPASSWD: /bin/systemctl reload suricata, /usr/sbin/service s
 
 ---
 
-## 📡 API Endpoints
+##  API Endpoints
 
 The application provides a RESTful API:
 
@@ -334,7 +334,7 @@ curl -X POST http://localhost:5500/api/rules \
 
 ---
 
-## 🎓 Rule Syntax Reference
+##  Rule Syntax Reference
 
 ### Rule Structure
 ```
@@ -372,7 +372,7 @@ action protocol src_ip src_port direction dst_ip dst_port (options)
 
 ---
 
-## 🛠️ Troubleshooting
+##  Troubleshooting
 
 ### Issue: Protocol-Specific Sections Not Showing
 
@@ -456,7 +456,7 @@ sudo service suricata reload
 
 ---
 
-## 📊 Project Structure
+##  Project Structure
 
 ```
 suricata-rule-builder/
@@ -485,7 +485,7 @@ suricata-rule-builder/
 
 ---
 
-## 🚀 Production Deployment
+##  Production Deployment
 
 ### Using Gunicorn (Recommended)
 ```bash
@@ -536,7 +536,7 @@ server {
 
 ---
 
-## 🔒 Security Considerations
+##  Security Considerations
 
 1. **Access Control**: This application has no built-in authentication. Deploy behind:
    - VPN
@@ -553,7 +553,7 @@ server {
 
 ---
 
-## 💡 Tips & Best Practices
+##  Tips & Best Practices
 
 ### Rule Writing Tips
 1. **Use SIDs ≥ 1000000** for custom rules to avoid conflicts
@@ -591,7 +591,7 @@ server {
 
 ---
 
-## 📚 Additional Resources
+##  Additional Resources
 
 ### Suricata Documentation
 - Official Docs: https://suricata.readthedocs.io/
@@ -605,11 +605,11 @@ server {
 
 ---
 
-## 📞 Support
+##  Support
 
 ### Getting Help
 1. Check this README for documentation
-2. Use the "📖 Help" button in the dashboard
+2. Use the "Help" button in the dashboard
 3. Review example rules in `sample-rules-enhanced.json`
 4. Check Suricata official documentation
 
@@ -623,7 +623,7 @@ When reporting issues, provide:
 
 ---
 
-## 🎉 Summary
+##  Summary
 
 This Suricata Rule Builder Dashboard provides:
 
@@ -646,4 +646,4 @@ This Suricata Rule Builder Dashboard provides:
 
 ---
 
-**Made for network security professionals** | **Production-ready** | **Open Source**
+**Made by divyanshhhhhh** | **Open Source**
